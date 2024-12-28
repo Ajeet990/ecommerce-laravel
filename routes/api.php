@@ -31,8 +31,9 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/register', [AuthController::class, 'register']);
+Route::get('/getCategories', [CategoryController::class, 'getCategories']);
 Route::middleware(['verify.token'])->group(function () {
-    Route::get('/getCategories', [CategoryController::class, 'getCategories']);
     Route::post('/addCategory', [CategoryController::class, 'addCategory']);
     Route::post('/addProduct', [ProductController::class, 'addProduct']);
+    Route::get('/getProducts', [ProductController::class, 'getProducts']);
 });

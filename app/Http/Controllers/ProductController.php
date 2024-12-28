@@ -30,7 +30,6 @@ class ProductController extends Controller
                 ], 200);
             }
             $validated = $validator->validated();
-            // dd("validated", $request->all(), $token, $userId);
             if ($request->hasFile('image')) {
                 $imagePath = $request->file('image')->store('product-images', 'public');
                 $imageUrl = asset('storage/' . $imagePath);
@@ -41,7 +40,7 @@ class ProductController extends Controller
             $product->name = $validated['name'];
             $product->description = $validated['description'];
             $product->price = $validated['price'];
-            $product->image = $validated['image'];
+            $product->image = $imageUrl ?? '';
             $product->category_id = $validated['category'];
             $product->user_id = $userId;
             $product->save();
@@ -58,6 +57,62 @@ class ProductController extends Controller
             }
             return response()->json($rst);
             
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Something went wrong',
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
+
+    public function getProducts(Request $request)
+    {
+        try {
+            $userId = $request->attributes->get('user_id');
+            $name = $request->query('name');
+            $category = $request->query('category');
+            
+            $productLists = Product::with('category')
+                            ->where('user_id', $userId)
+                            ->orderBy('created_at', 'DESC')
+                            ->when($name, function ($query, $name) {
+                                $query->where('name', 'LIKE', "%{$name}%")->orWhere('description', 'LIKE', "%{$name}%");
+                            })
+                            ->when($category, function ($query, $category) {
+                                $query->where('category_id', $category);
+                            })
+                            ->get();
+            $formattedResponse = $productLists->mapToGroups(function ($product) {
+                return [
+                    $product->category->name => [
+                        'id' => $product->id,
+                        'name' => $product->name,
+                        'description' => $product->description,
+                        'price' => $product->price,
+                        'image' => $product->image,
+                        // 'user' => [
+                        //     'id' => $product->user->id,
+                        //     'name' => $product->user->name,
+                        // ],
+                    ],
+                ];
+            });
+            $rst = [
+                'success' => false,
+                'message' => 'Not able to find products',
+                'data' => []
+            ];
+
+            if ($productLists) {
+                $rst = [
+                    'success' => true,
+                    'message' => 'Products found.',
+                    'data' => $formattedResponse
+                ];
+            }
+            return response()->json($rst);
+
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
