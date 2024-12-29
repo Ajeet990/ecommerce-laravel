@@ -121,4 +121,32 @@ class ProductController extends Controller
             ]);
         }
     }
+
+    public function getProductForHome(Request $request)
+    {
+        try {
+            $rst = [
+                'success' => true,
+                'message' => 'No products found.',
+                'data' => []
+            ];
+
+            $productList = Product::all();
+            if ($productList) {
+                $rst = [
+                    'success' => true,
+                    'message' => 'Products found.',
+                    'data' => $productList
+                ];
+            }
+            return response()->json($rst);
+
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Something went wrong',
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
 }
